@@ -1,7 +1,7 @@
 from baseoptimization import BaseOptimization
 # import spiketoolkit as st
 # import spikeextractors as se
-# import numpy as np
+import numpy as np
 # import logging
 # import pickle
 # from contextlib import redirect_stdout

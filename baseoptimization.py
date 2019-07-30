@@ -44,7 +44,7 @@ class BaseOptimization(object):
    
     def load_results(self, file_name):
         with open("{}.pickle".format(file_name), 'rb') as f:
-            f.encode()
+#             f.encode() # this throws an error for me, why?
             return pickle.load(f)
         
     def delete_folder(self,folder_name):
@@ -69,7 +69,7 @@ class BaseOptimization(object):
 
         SorterClass = st.sorters.sorter_dict[self.sorter]
         try:
-            sorter = SorterClass(recording=self.re,output_folder = output_folder)
+            sorter = SorterClass(recording=self.re, output_folder = output_folder)
             sorter.set_params(**chosen_parameters)
             sorter.run()
         except:
@@ -86,7 +86,7 @@ class BaseOptimization(object):
         del sorting_extractor
         del sorter
 
-        print('score:  ',score)
+        print('score: ', score)
         return score
 
     def compute_score(self,sorting_extractor):
