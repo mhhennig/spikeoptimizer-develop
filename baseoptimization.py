@@ -46,10 +46,10 @@ class BaseOptimization(object):
         with open("{}.pickle".format(file_name), 'rb') as f:
             # f.encode() # this throws an error for me, why?
             return pickle.load(f)
-        
+
     def delete_folder(self, folder_name):
         shutil.rmtree(str(folder_name), ignore_errors=True)
-        
+
     def function_wrapper(self, chosen_values):
         chosen_parameters = {}
         print('chosen values:', chosen_values)
@@ -60,9 +60,8 @@ class BaseOptimization(object):
                 chosen_parameters[key] = chosen_values[i]
         output_folder = 'optimization_{}'.format(self.iteration)
         self.iteration += 1
-                
+
         print("Clustering spikes with parameters: {}".format(chosen_values))
-     
         print('', end='', flush=True)
 
         logging.info("clustering spikes with parameters: {}".format(chosen_values))
@@ -92,7 +91,7 @@ class BaseOptimization(object):
     def compute_score(self, sorting_extractor):
         sc = st.comparison.compare_sorter_to_ground_truth(self.gt_se,
                                                           sorting_extractor, exhaustive_gt=True)
-        
+
         d_results = sc.get_performance(method='pooled_with_sum', output='dict')
         if self.metric == 'accuracy':
             score = d_results['accuracy']
@@ -115,9 +114,13 @@ class BaseOptimization(object):
             if self.iteration < 2:
                 SFMdaSortingExtractor.write_sorting(sorting=sorting_true,
                                                     save_path='test_outputs/firings_true.mda')
-
+# we may also want to compute the SNRs of the ground truth units
+# together with firing rates and other information
+                print('Compute units info...')
+                sa.ComputeUnitsInfo.execute(recording_dir=recdir,
+                                            firings='test_outputs/firings_true.mda',
+                                            json_out='test_outputs/true_units_info.json')
             SFMdaSortingExtractor.write_sorting(sorting=hs2_se, save_path='test_outputs/firings.mda')
-
             # run the comparison
             print('Compare with truth...')
             sa.GenSortingComparisonTable.execute(firings='test_outputs/firings.mda',
@@ -126,14 +129,6 @@ class BaseOptimization(object):
                                                  json_out='test_outputs/comparison.json',
                                                  html_out='test_outputs/comparison.html',
                                                  _container=None)
-            # we may also want to compute the SNRs of the ground truth units
-            # together with firing rates and other information
-            print('Compute units info...')
-            sa.ComputeUnitsInfo.execute(
-                recording_dir=recdir,
-                firings='test_outputs/firings_true.mda',
-                json_out='test_outputs/true_units_info.json'
-            )
 
             # Load and consolidate the outputs
             true_units_info = mt.loadObject(path='test_outputs/true_units_info.json')
@@ -149,12 +144,11 @@ class BaseOptimization(object):
             # Report number of units found
             snrthresh = 8
             units_above = [unit for unit in comparison.values() if float(unit['true_unit_info']['snr'] > snrthresh)]
-            #print('Avg. accuracy for units with snr >= {}: {}'.format(snrthresh, np.mean([float(unit['accuracy']) for unit in units_above])))
 
             score = np.mean([float(unit['accuracy']) for unit in units_above])
 
             del hs2_se
-       
+
         return -score
 
     def plot_convergence(self):
