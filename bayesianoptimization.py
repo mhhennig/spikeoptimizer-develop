@@ -1,18 +1,6 @@
 from baseoptimization import BaseOptimization
-# import spiketoolkit as st
-# import spikeextractors as se
-# import numpy as np
-# import logging
-# import pickle
-# from contextlib import redirect_stdout
-# from multiprocessing import Process, Queue, cpu_count
-
-# import psutil
 import matplotlib.pyplot as plt
-# from tqdm import tqdm
 import time
-# import os, sys
-
 from skopt import gp_minimize
 from skopt.space import Integer, Real, Categorical
 from skopt.plots import plot_convergence, plot_evaluations, plot_objective

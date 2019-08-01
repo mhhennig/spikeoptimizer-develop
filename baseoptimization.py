@@ -1,4 +1,3 @@
-
 import logging
 import os
 import pickle
@@ -67,6 +66,7 @@ class BaseOptimization(object):
         logging.info("clustering spikes with parameters: {}".format(chosen_values))
 
         SorterClass = st.sorters.sorter_dict[self.sorter]
+        sorter_par = SorterClass.default_params()
         try:
             sorter = SorterClass(recording=self.re, output_folder=output_folder)
             sorter_params = sorter.default_params()
@@ -77,10 +77,10 @@ class BaseOptimization(object):
                     else:
                         sorter_par[key] = chosen_parameters[key]
             sorter.set_params(**sorter_par)
-            #sorter.set_params(**chosen_parameters)
             sorter.run()
-        except:
-            print('sorter failed for these parameters')
+        except Exception as e:
+            print('Sorter failed for these parameters. Output:')
+            print(e)
             return 0
 
         sorting_extractor = sorter.get_result()
@@ -111,8 +111,7 @@ class BaseOptimization(object):
             print('comparison:')
             print(d_results)
             if (d_results['precision']+d_results['recall']) > 0:
-                score = 2 * d_results['precision'] * d_results['recall']
-                /(d_results['precision']+d_results['recall'])
+                score = 2 * d_results['precision'] * d_results['recall'] / (d_results['precision']+d_results['recall'])
             else:
                 score = 0
         if self.metric == 'spikeforest':
