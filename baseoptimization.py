@@ -69,7 +69,15 @@ class BaseOptimization(object):
         SorterClass = st.sorters.sorter_dict[self.sorter]
         try:
             sorter = SorterClass(recording=self.re, output_folder=output_folder)
-            sorter.set_params(**chosen_parameters)
+            sorter_params = sorter.default_params()
+            for key in chosen_parameters:
+                if key in sorter_par.keys():
+                    if type(sorter_par[key]) == int:
+                        sorter_par[key] = int(chosen_parameters[key])
+                    else:
+                        sorter_par[key] = chosen_parameters[key]
+            sorter.set_params(**sorter_par)
+            #sorter.set_params(**chosen_parameters)
             sorter.run()
         except:
             print('sorter failed for these parameters')
