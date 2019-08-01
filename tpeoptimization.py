@@ -1,19 +1,8 @@
 from baseoptimization import BaseOptimization
-# import spiketoolkit as st
-# import spikeextractors as se
 import numpy as np
-# import logging
-# import pickle
-# from contextlib import redirect_stdout
-# from multiprocessing import Process, Queue, cpu_count
-
-# import psutil
 import matplotlib.pyplot as plt
-# from tqdm import tqdm
 import time
-# import os, sys
 from collections import defaultdict
-
 import hyperopt
 from hyperopt.pyll.stochastic import sample
 from hyperopt import Trials
