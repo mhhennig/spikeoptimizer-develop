@@ -23,7 +23,7 @@ from hyperopt import hp
 
 class TPEOptimization(BaseOptimization):
     def __init__(self, sorter, recording, gt_sorting, params_to_opt,
-                 space, run_schedule=[100], metric='accuracy',
+                 space=None, run_schedule=[100], metric='accuracy',
                  recdir=None, outfile='results'):
 
         BaseOptimization.__init__(self, sorter=sorter, recording=recording,
@@ -32,6 +32,7 @@ class TPEOptimization(BaseOptimization):
                                   space=space, run_schedule=run_schedule,
                                   metric=metric, recdir=None, outfile=outfile)
         self.trials = Trials()
+        self.space = self.define_space(space)
 
     def run(self):
         results = self.optimise(
@@ -46,10 +47,37 @@ class TPEOptimization(BaseOptimization):
                              algo=tpe.suggest,
                              max_evals=run_schedule[0],
                              trials=self.trials)
-        results_obj = defaultdict()
-        results_obj['optimal_params'] = self.trials.best_trial['misc']['vals']
-        results_obj['best_accuracy'] = -self.trials.best_trial['result']['loss']
+
+        results_obj = self.get_optimization_details()
+        results_obj['time_taken'] = start_time - time.time()
         print("--- %s seconds ---" % (time.time() - start_time))
+        return results_obj
+
+    def define_space(self, space):
+        if space not None:
+            return space
+        space = {}
+        for key, value in self.params_to_opt.items():
+            if type(value) is list:
+                space[key] = hp.choice(key, value)
+            if type(value[0]) is int:
+                space[key] = hp.quniform(key, value[0], value[1], 1)
+            if type(value[0]) is float:
+                space[key] = hp.uniform(key, value[0], value[1])
+        return space
+
+    def get_optimization_details(self):
+        results_obj = {}
+        results_obj['optimal_params'] = self.trials.best_trial['misc']['vals']
+        results_obj['best_score'] = -self.trials.best_trial['result']['loss']
+
+        results_obj['params_evaluated'] = self.trials.vals
+        results_obj['scores'] = self.results_obj[]
+        results_obj['iter_min_found'] = self.trials.best_trial['tid']
+        results_obj['trials'] = self.trials
+        results_obj['avg_best_score'] = self.trials.average_best_error()
+        results_obj['total_iter'] = self.iteration
+
         return results_obj
 
     def plot_convergence(self):
