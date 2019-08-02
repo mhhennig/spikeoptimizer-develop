@@ -8,15 +8,15 @@ from skopt.plots import plot_convergence, plot_evaluations, plot_objective
 
 class BayesianOptimization(BaseOptimization):
     def __init__(self, sorter, recording, gt_sorting, params_to_opt,
-                 space=None, run_schedule=[150, 100],
+                 space=None, run_schedule=[50, 50],
                  metric='accuracy', recdir=None,
-                 outfile='results'):
+                 outfile=None):
+        assert len(run_schedule)==2, "run_schedule requires two numbers"
         BaseOptimization.__init__(self, sorter=sorter, recording=recording,
                                   gt_sorting=gt_sorting,
                                   params_to_opt=params_to_opt,
                                   space=space, run_schedule=run_schedule,
-                                  metric=metric, recdir=None, outfile=outfile)
-        self.results_obj = None
+                                  metric=metric, recdir=recdir, outfile=outfile)
 
     def run(self):
         results = self.optimise(
@@ -26,8 +26,10 @@ class BayesianOptimization(BaseOptimization):
             }
         results['optimal_params'] = best_parameters
         results.specs['args']['func'] = None
-        self.save_results(results, self.outfile)
         self.results_obj = results
+        if outfile is not None:
+            self.save_results(self.outfile)
+
 
     def optimise(self, parameter_definitions, function, run_schedule):
         # Parse parameter definitions to a list of skopt dimensions
