@@ -27,7 +27,7 @@ class TPEOptimization(BaseOptimization):
         results = self.optimise(
                 self.params_to_opt, self.function_wrapper, self.run_schedule)
         self.results_obj = results
-        if outfile is not None:
+        if self.outfile is not None:
             self.save_results(self.outfile)
 
     def optimise(self, parameter_definitions, function, run_schedule):

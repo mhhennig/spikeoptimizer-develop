@@ -27,7 +27,7 @@ class BayesianOptimization(BaseOptimization):
         results['optimal_params'] = best_parameters
         results.specs['args']['func'] = None
         self.results_obj = results
-        if outfile is not None:
+        if self.outfile is not None:
             self.save_results(self.outfile)
 
 
@@ -55,6 +55,15 @@ class BayesianOptimization(BaseOptimization):
                                      )
         print("--- %s seconds ---" % (time.time() - start_time))
         return results_object
+
+    def get_best_params(self):
+        best_params = {}
+        for key, value in self.params_to_opt.items():
+            if type(value[0]) is int:
+                best_params[key] = int(self.results_obj['optimal_params'][key])
+            else:
+                best_params[key] = self.results_obj['optimal_params'][key]
+        return best_params
 
     def plot_convergence(self):
         if self.results_obj is not None:
