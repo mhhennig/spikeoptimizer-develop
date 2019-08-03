@@ -80,17 +80,20 @@ class BaseOptimization(object):
                         sorter_par[key] = chosen_parameters[key]
             sorter.set_params(**sorter_par)
             sorter.run()
+
         except Exception as e:
+            del sorter
+            self.delete_folder(output_folder)
             print('Sorter failed for these parameters. Output:')
             print(e)
-            return 0
+            return 1e-4
 
         sorting_extractor = sorter.get_result()
         if len(sorting_extractor.get_unit_ids()) > 0:
             score = self.compute_score(sorting_extractor)
         else:
             print('Sorter found no units')
-            score = 0
+            score = 1e-4
 
         del sorting_extractor
         del sorter
