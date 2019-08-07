@@ -36,7 +36,8 @@ class TPEOptimization(BaseOptimization):
                              self.space,
                              algo=tpe.suggest,
                              max_evals=run_schedule[0],
-                             trials=self.trials)
+                             trials=self.trials,
+                             show_progressbar=False)
 
         results_obj = self.get_optimization_details()
         results_obj['time_taken'] = start_time - time.time()

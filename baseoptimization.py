@@ -13,6 +13,7 @@ import shutil
 import spiketoolkit as st
 from spikeforest import SFMdaSortingExtractor
 import spikeforest_analysis as sa
+from mountaintools import client as mt
 
 
 class BaseOptimization(object):
@@ -124,40 +125,41 @@ class BaseOptimization(object):
                     score = 0
             del sc
         else:
+            tmp_dir = 'test_outputs_spikeforest'
             sorting_true = self.gt_se
-            hs2_se = sorting_extractor
-            recdir = self.recdir
-            if self.iteration < 2:
+            se = sorting_extractor
+            if self.iteration == 1:
+                if not os.path.exists(tmp_dir):
+                    print('Creating folder {} for tmporary data - note this is not cleaned up.'.format(tmp_dir))
+                    os.makedirs(tmp_dir)
                 SFMdaSortingExtractor.write_sorting(sorting=sorting_true,
-                                                    save_path='test_outputs/firings_true.mda')
+                                                    save_path=os.path.join(tmp_dir,'firings_true.mda'))
                 print('Compute units info...')
-                sa.ComputeUnitsInfo.execute(recording_dir=recdir,
-                                            firings='test_outputs/firings_true.mda',
-                                            json_out='test_outputs/true_units_info.json')
-            SFMdaSortingExtractor.write_sorting(sorting=hs2_se, save_path='test_outputs/firings.mda')
+                sa.ComputeUnitsInfo.execute(recording_dir=self.recdir,
+                                            firings=os.path.join(tmp_dir,'firings_true.mda'),
+                                            json_out=os.path.join(tmp_dir,'true_units_info.json'))
+            SFMdaSortingExtractor.write_sorting(sorting=se, save_path=os.path.join(tmp_dir,'firings.mda'))
             print('Compare with truth...')
-            sa.GenSortingComparisonTable.execute(firings='test_outputs/firings.mda',
-                                                 firings_true='test_outputs/firings_true.mda',
+            sa.GenSortingComparisonTable.execute(firings=os.path.join(tmp_dir,'firings.mda'),
+                                                 firings_true=os.path.join(tmp_dir,'firings_true.mda'),
                                                  units_true=[],  # use all units
-                                                 json_out='test_outputs/comparison.json',
-                                                 html_out='test_outputs/comparison.html',
+                                                 json_out=os.path.join(tmp_dir,'comparison.json'),
+                                                 html_out=os.path.join(tmp_dir,'comparison.html'),
                                                  _container=None)
-            true_units_info = mt.loadObject(path='test_outputs/true_units_info.json')
-            comparison = mt.loadObject(path='test_outputs/comparison.json')
+            true_units_info = mt.loadObject(path=os.path.join(tmp_dir,'true_units_info.json'))
+            comparison = mt.loadObject(path=os.path.join(tmp_dir,'comparison.json'))
             true_units_info_by_unit_id = dict()
             for unit in true_units_info:
                 true_units_info_by_unit_id[unit['unit_id']] = unit
             for unit in comparison.values():
                 unit['true_unit_info'] = true_units_info_by_unit_id[unit['unit_id']]
             # Print SNRs and accuracies
-            for unit in comparison.values():
-                print('Unit {}: SNR={}, accuracy={}'.format(unit['unit_id'], unit['true_unit_info']['snr'], unit['accuracy']))
+            #for unit in comparison.values():
+            #    print('Unit {}: SNR={}, accuracy={}'.format(unit['unit_id'], unit['true_unit_info']['snr'], unit['accuracy']))
             # Report number of units found
             snrthresh = 8
             units_above = [unit for unit in comparison.values() if float(unit['true_unit_info']['snr'] > snrthresh)]
-            score = np.mean([float(unit['accuracy']) for unit in units_above])
-            self.delete_folder('test_outputs')
-            
+            score = np.mean([float(unit['accuracy']) for unit in units_above])            
         return -score
 
     def plot_convergence(self):
