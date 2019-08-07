@@ -31,6 +31,7 @@ class BaseOptimization(object):
         self.metric = metric.lower()
         self.recdir = recdir
         self.results_obj = None
+        self.SorterClass = st.sorters.sorter_dict[self.sorter]
 
 
     def run(self):
@@ -53,7 +54,7 @@ class BaseOptimization(object):
     def function_wrapper(self, chosen_values):
 
         print("Iteration {}".format(self.iteration))
-        print("Clustering spikes with parameters: {}".format(chosen_values))
+#         print("Clustering spikes with parameters: {}".format(chosen_values))
         print('', end='', flush=True)
 
         chosen_parameters = {}
@@ -65,12 +66,11 @@ class BaseOptimization(object):
         output_folder = 'optimization_{}'.format(self.iteration)
         self.iteration += 1
 
-        logging.info("clustering spikes with parameters: {}".format(chosen_values))
+#         logging.info("clustering spikes with parameters: {}".format(chosen_values))
 
-        SorterClass = st.sorters.sorter_dict[self.sorter]
-        sorter_par = SorterClass.default_params()
+        sorter_par = self.SorterClass.default_params()
         try:
-            sorter = SorterClass(recording=self.re, output_folder=output_folder)
+            sorter = self.SorterClass(recording=self.re, output_folder=output_folder)
             sorter_params = sorter.default_params()
             for key in chosen_parameters:
                 if key in sorter_par.keys():
@@ -78,9 +78,10 @@ class BaseOptimization(object):
                         sorter_par[key] = int(chosen_parameters[key])
                     else:
                         sorter_par[key] = chosen_parameters[key]
+            print("Passed parameters: {}".format(sorter_par))
+            print('', end='', flush=True)
             sorter.set_params(**sorter_par)
             sorter.run()
-
         except Exception as e:
             del sorter
             self.delete_folder(output_folder)
@@ -121,6 +122,7 @@ class BaseOptimization(object):
                     score = 2 * d_results['precision'] * d_results['recall'] / (d_results['precision']+d_results['recall'])
                 else:
                     score = 0
+            del sc
         else:
             sorting_true = self.gt_se
             hs2_se = sorting_extractor
