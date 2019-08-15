@@ -50,7 +50,7 @@ class BayesianOptimization(BaseOptimization):
                                      noise=1e-10,
                                      n_calls=run_schedule[0],
                                      n_random_starts=run_schedule[1],
-                                     n_jobs=-1,
+                                     n_jobs=1,
                                      verbose=True
                                      )
         print("--- %s seconds ---" % (time.time() - start_time))

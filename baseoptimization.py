@@ -33,7 +33,26 @@ class BaseOptimization(object):
         self.recdir = recdir
         self.results_obj = None
         self.SorterClass = st.sorters.sorter_dict[self.sorter]
+        self.true_units_above = None
+        
+        if self.metric == 'spikeforest':
+            
+            tmp_dir = 'test_outputs_spikeforest'
+            if not os.path.exists(tmp_dir):
+                print('Creating folder {} for temporary data - note this is not cleaned up.'.format(tmp_dir))
+                os.makedirs(tmp_dir)
+            SFMdaSortingExtractor.write_sorting(sorting=self.gt_se,
+                                                save_path=os.path.join(tmp_dir,'firings_true.mda'))
+            print('Compute units info...')
+            sa.ComputeUnitsInfo.execute(recording_dir=self.recdir,
+                                        firings=os.path.join(tmp_dir,'firings_true.mda'),
+                                        json_out=os.path.join(tmp_dir,'true_units_info.json'))
 
+            true_units_info = mt.loadObject(path=os.path.join(tmp_dir,'true_units_info.json'))
+            true_units_info_by_unit_id = dict()
+            snrthresh = 8
+            self.true_units_above = [u['unit_id'] for u in true_units_info if u['snr'] > snrthresh]
+            print('Only testing ground truth units with snr > 8: ',self.true_units_above)
 
     def run(self):
         raise(NotImplementedError)
@@ -55,7 +74,7 @@ class BaseOptimization(object):
     def function_wrapper(self, chosen_values):
 
         print("Iteration {}".format(self.iteration))
-#         print("Clustering spikes with parameters: {}".format(chosen_values))
+        print("Clustering with parameters: {}".format(chosen_values))
         print('', end='', flush=True)
 
         chosen_parameters = {}
@@ -79,6 +98,9 @@ class BaseOptimization(object):
                         sorter_par[key] = int(chosen_parameters[key])
                     else:
                         sorter_par[key] = chosen_parameters[key]
+            if self.sorter == 'herdingspikes':
+                sorter_par['filter'] = False
+                sorter_par['pre_scale'] = False
             print("Passed parameters: {}".format(sorter_par))
             print('', end='', flush=True)
             sorter.set_params(**sorter_par)
@@ -99,7 +121,6 @@ class BaseOptimization(object):
 
         del sorting_extractor
         del sorter
-
         self.delete_folder(output_folder)
         
         print('score: ', score)
@@ -108,7 +129,7 @@ class BaseOptimization(object):
     def compute_score(self, sorting_extractor):
         if self.metric != 'spikeforest':
             sc = st.comparison.compare_sorter_to_ground_truth(self.gt_se,
-                                                              sorting_extractor, exhaustive_gt=True)
+                                                              sorting_extractor, exhaustive_gt=True, min_accuracy=0)
             d_results = sc.get_performance(method='pooled_with_sum', output='dict')
             if self.metric == 'accuracy':
                 score = d_results['accuracy']
@@ -126,40 +147,16 @@ class BaseOptimization(object):
             del sc
         else:
             tmp_dir = 'test_outputs_spikeforest'
-            sorting_true = self.gt_se
-            se = sorting_extractor
-            if self.iteration == 1:
-                if not os.path.exists(tmp_dir):
-                    print('Creating folder {} for tmporary data - note this is not cleaned up.'.format(tmp_dir))
-                    os.makedirs(tmp_dir)
-                SFMdaSortingExtractor.write_sorting(sorting=sorting_true,
-                                                    save_path=os.path.join(tmp_dir,'firings_true.mda'))
-                print('Compute units info...')
-                sa.ComputeUnitsInfo.execute(recording_dir=self.recdir,
-                                            firings=os.path.join(tmp_dir,'firings_true.mda'),
-                                            json_out=os.path.join(tmp_dir,'true_units_info.json'))
-            SFMdaSortingExtractor.write_sorting(sorting=se, save_path=os.path.join(tmp_dir,'firings.mda'))
-            print('Compare with truth...')
+            SFMdaSortingExtractor.write_sorting(sorting=sorting_extractor, save_path=os.path.join(tmp_dir,'firings.mda'))
+            print('Compare with ground truth...')
             sa.GenSortingComparisonTable.execute(firings=os.path.join(tmp_dir,'firings.mda'),
                                                  firings_true=os.path.join(tmp_dir,'firings_true.mda'),
-                                                 units_true=[],  # use all units
+                                                 units_true=self.true_units_above,  # use all units
                                                  json_out=os.path.join(tmp_dir,'comparison.json'),
                                                  html_out=os.path.join(tmp_dir,'comparison.html'),
                                                  _container=None)
-            true_units_info = mt.loadObject(path=os.path.join(tmp_dir,'true_units_info.json'))
             comparison = mt.loadObject(path=os.path.join(tmp_dir,'comparison.json'))
-            true_units_info_by_unit_id = dict()
-            for unit in true_units_info:
-                true_units_info_by_unit_id[unit['unit_id']] = unit
-            for unit in comparison.values():
-                unit['true_unit_info'] = true_units_info_by_unit_id[unit['unit_id']]
-            # Print SNRs and accuracies
-            #for unit in comparison.values():
-            #    print('Unit {}: SNR={}, accuracy={}'.format(unit['unit_id'], unit['true_unit_info']['snr'], unit['accuracy']))
-            # Report number of units found
-            snrthresh = 8
-            units_above = [unit for unit in comparison.values() if float(unit['true_unit_info']['snr'] > snrthresh)]
-            score = np.mean([float(unit['accuracy']) for unit in units_above])            
+            score = np.mean([float(u['accuracy']) for u in comparison.values()])
         return -score
 
     def plot_convergence(self):
