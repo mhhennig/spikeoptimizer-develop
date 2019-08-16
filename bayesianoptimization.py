@@ -10,13 +10,14 @@ class BayesianOptimization(BaseOptimization):
     def __init__(self, sorter, recording, gt_sorting, params_to_opt,
                  space=None, run_schedule=[50, 50],
                  metric='accuracy', recdir=None,
-                 outfile=None):
+                 outfile=None, x0=None, y0=None):
         assert len(run_schedule)==2, "run_schedule requires two numbers"
         BaseOptimization.__init__(self, sorter=sorter, recording=recording,
                                   gt_sorting=gt_sorting,
                                   params_to_opt=params_to_opt,
                                   space=space, run_schedule=run_schedule,
-                                  metric=metric, recdir=recdir, outfile=outfile)
+                                  metric=metric, recdir=recdir, outfile=outfile,
+                                  x0=x0, y0=y0)
 
     def run(self):
         results = self.optimise(
@@ -27,6 +28,8 @@ class BayesianOptimization(BaseOptimization):
         results['optimal_params'] = best_parameters
         results.specs['args']['func'] = None
         self.results_obj = results
+        self.x0 = self.results_obj.x_iters
+        self.y0 = self.results_obj.func_vals
         if self.outfile is not None:
             self.save_results(self.outfile)
 
@@ -47,6 +50,8 @@ class BayesianOptimization(BaseOptimization):
         results_object = gp_minimize(function,
                                      dimensions,
                                      acq_func='EI',
+                                     x0=self.x0,
+                                     y0=self.y0,
                                      noise=1e-10,
                                      n_calls=run_schedule[0],
                                      n_random_starts=run_schedule[1],

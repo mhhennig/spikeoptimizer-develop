@@ -19,7 +19,7 @@ from mountaintools import client as mt
 class BaseOptimization(object):
     def __init__(self, sorter, recording, gt_sorting, params_to_opt,
                  space=None, run_schedule=[50, 50], metric='accuracy',
-                 recdir=None, outfile=None):
+                 recdir=None, outfile=None, x0=None, y0=None):
         self.sorter = sorter.lower()
         self.re = recording
         self.gt_se = gt_sorting
@@ -34,6 +34,8 @@ class BaseOptimization(object):
         self.results_obj = None
         self.SorterClass = st.sorters.sorter_dict[self.sorter]
         self.true_units_above = None
+        self.x0 = x0 
+        self.y0 = y0
         
         if self.metric == 'spikeforest':
             

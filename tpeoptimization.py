@@ -13,13 +13,14 @@ from hyperopt import hp
 class TPEOptimization(BaseOptimization):
     def __init__(self, sorter, recording, gt_sorting, params_to_opt,
                  space=None, run_schedule=[100], metric='accuracy',
-                 recdir=None, outfile=None):
+                 recdir=None, outfile=None, x0=None, y0=None):
 
         BaseOptimization.__init__(self, sorter=sorter, recording=recording,
                                   gt_sorting=gt_sorting,
                                   params_to_opt=params_to_opt,
                                   space=space, run_schedule=run_schedule,
-                                  metric=metric, recdir=recdir, outfile=outfile)
+                                  metric=metric, recdir=recdir, outfile=outfile,
+                                  x0=y0, y0=y0)
         self.trials = Trials()
         self.space = self.define_space(space)
 
