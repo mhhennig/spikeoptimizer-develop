@@ -11,6 +11,8 @@ import time
 import sys
 import shutil
 import spiketoolkit as st
+import spikesorters as ss
+import spikecomparison as sc
 from spikeforest import SFMdaSortingExtractor
 import spikeforest_analysis as sa
 from mountaintools import client as mt
@@ -32,7 +34,7 @@ class BaseOptimization(object):
         self.metric = metric.lower()
         self.recdir = recdir
         self.results_obj = None
-        self.SorterClass = st.sorters.sorter_dict[self.sorter]
+        self.SorterClass = ss.sorter_dict[self.sorter]
         self.true_units_above = None
         self.x0 = x0 
         self.y0 = y0
@@ -130,9 +132,11 @@ class BaseOptimization(object):
 
     def compute_score(self, sorting_extractor):
         if self.metric != 'spikeforest':
-            sc = st.comparison.compare_sorter_to_ground_truth(self.gt_se,
-                                                              sorting_extractor, exhaustive_gt=True, min_accuracy=0)
-            d_results = sc.get_performance(method='pooled_with_sum', output='dict')
+            comparison = sc.compare_sorter_to_ground_truth(self.gt_se,
+                                                              sorting_extractor, exhaustive_gt=True)
+            d_results = comparison.get_performance(method='pooled_with_average', output='dict')
+            print('results')
+            print(d_results)
             if self.metric == 'accuracy':
                 score = d_results['accuracy']
             if self.metric == 'precision':
@@ -146,7 +150,7 @@ class BaseOptimization(object):
                     score = 2 * d_results['precision'] * d_results['recall'] / (d_results['precision']+d_results['recall'])
                 else:
                     score = 0
-            del sc
+            del comparison
         else:
             tmp_dir = 'test_outputs_spikeforest'
             SFMdaSortingExtractor.write_sorting(sorting=sorting_extractor, save_path=os.path.join(tmp_dir,'firings.mda'))
